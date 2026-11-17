@@ -14,6 +14,7 @@
     <modules>
         <module>campus-api</module>
         <module>campus-core</module>
+        <module>course-plugin</module>
     </modules>
 
     <properties>
