@@ -140,4 +140,42 @@ class ServiceDispatcherTest {
         assertEquals(null, result.error());
     }
 
+    @Test
+    void shouldReturnPluginErrorWhenServiceReturnsNull() {
+        ServiceRegistry registry = new ServiceRegistry();
+    
+        CampusService nullService = new CampusService() {
+            @Override
+            public ServiceMetadata getMetadata() {
+                return new ServiceMetadata(
+                        "null_service",
+                        "空结果服务",
+                        "用于测试空结果处理",
+                        List.of(),
+                        "1.0"
+                );
+            }
+    
+            @Override
+            public QueryResult query(QueryRequest request) {
+                return null;
+            }
+        };
+
+        registry.register(nullService);
+
+        ServiceDispatcher dispatcher = new ServiceDispatcher(registry);
+
+        QueryResult result = dispatcher.dispatch(
+                new QueryRequest("null_service", Map.of())
+        );
+
+        assertTrue(!result.success());
+        assertEquals(
+                ErrorCode.PLUGIN_EXECUTION_FAILED,
+                result.error().code()
+        );
+        assertEquals("服务未返回查询结果", result.message());
+    }
+
 }
