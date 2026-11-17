@@ -87,4 +87,16 @@ class ServiceRegistryTest {
             );
         }
     }
+
+    @Test
+    void shouldNotFindServiceAfterUnregister() {
+        ServiceRegistry registry = new ServiceRegistry();
+    
+        registry.register(new TestService("temporary_service"));
+        registry.unregister("temporary_service");
+    
+        assertTrue(registry.find("temporary_service").isEmpty());
+        assertTrue(registry.listMetadata().isEmpty());
+    }
+
 }
