@@ -70,4 +70,33 @@ class ServiceDispatcherTest {
                 result.error().code()
         );
     }
+    @Test
+    void shouldReturnInvalidParameterWhenRequestIsNull() {
+        ServiceRegistry registry = new ServiceRegistry();
+        ServiceDispatcher dispatcher = new ServiceDispatcher(registry);
+    
+        QueryResult result = dispatcher.dispatch(null);
+
+        assertTrue(!result.success());
+        assertEquals(
+                ErrorCode.INVALID_PARAMETER,
+                result.error().code()
+        );
+    }
+    @Test
+    void shouldReturnInvalidParameterWhenServiceIdIsBlank() {
+        ServiceRegistry registry = new ServiceRegistry();
+        ServiceDispatcher dispatcher = new ServiceDispatcher(registry);
+    
+        QueryRequest request = new QueryRequest("  ", Map.of());
+    
+        QueryResult result = dispatcher.dispatch(request);
+    
+        assertTrue(!result.success());
+        assertEquals(
+                ErrorCode.INVALID_PARAMETER,
+                result.error().code()
+        );
+    }
+
 }
