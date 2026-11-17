@@ -1,0 +1,12 @@
+package com.opencampus.api;
+
+public enum ErrorCode {
+    SERVICE_NOT_FOUND,
+    SERVICE_DISABLED,
+    INVALID_PARAMETER,
+    NO_MATCH,
+    DATA_LOAD_FAILED,
+    PLUGIN_LOAD_FAILED,
+    PLUGIN_EXECUTION_FAILED,
+    INTERNAL_ERROR
+}
