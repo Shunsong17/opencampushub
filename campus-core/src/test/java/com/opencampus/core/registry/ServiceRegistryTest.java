@@ -39,6 +39,26 @@ class ServiceRegistryTest {
         assertTrue(exception.getMessage().contains("服务 ID 已存在"));
     }
 
+    @Test
+    void shouldListServicesInRegistrationOrder() {
+        ServiceRegistry registry = new ServiceRegistry();
+    
+        registry.register(new TestService("announcement_query"));
+        registry.register(new TestService("course_query"));
+    
+        List<ServiceMetadata> metadataList = registry.listMetadata();
+
+        assertEquals(2, metadataList.size());
+        assertEquals(
+                "announcement_query",
+                metadataList.get(0).serviceId()
+       );
+        assertEquals(
+                "course_query",
+                metadataList.get(1).serviceId()
+        );
+    }
+
     private static class TestService implements CampusService {
 
         private final String serviceId;
