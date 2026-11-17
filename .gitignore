@@ -1,0 +1,12 @@
+# Java 编译产物
+*.class
+target/
+out/
+
+# VS Code 和 IntelliJ 本地配置
+.vscode/
+.idea/
+
+# 系统文件
+.DS_Store
+Thumbs.db
