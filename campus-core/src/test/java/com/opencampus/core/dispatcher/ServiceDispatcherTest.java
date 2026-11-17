@@ -99,4 +99,45 @@ class ServiceDispatcherTest {
         );
     }
 
+    @Test
+    void shouldReturnServiceResultWhenServiceSucceeds() {
+        ServiceRegistry registry = new ServiceRegistry();
+    
+        CampusService workingService = new CampusService() {
+            @Override
+            public ServiceMetadata getMetadata() {
+                return new ServiceMetadata(
+                        "working_service",
+                        "正常服务",
+                        "用于测试正常调度",
+                        List.of(),
+                        "1.0"
+                );
+            }
+
+            @Override
+            public QueryResult query(QueryRequest request) {
+                return QueryResult.success(
+                        "working_service",
+                        "查询成功",
+                        List.of()
+                );
+            }
+        };
+
+        registry.register(workingService);
+
+        ServiceDispatcher dispatcher = new ServiceDispatcher(registry);
+
+        QueryResult result = dispatcher.dispatch(
+                new QueryRequest("working_service", Map.of())
+        );
+
+        assertTrue(result.success());
+        assertEquals("working_service", result.serviceId());
+        assertEquals("查询成功", result.message());
+        assertTrue(result.items().isEmpty());
+        assertEquals(null, result.error());
+    }
+
 }
