@@ -10,6 +10,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ServiceRegistryTest {
 
@@ -22,6 +23,20 @@ class ServiceRegistryTest {
 
         assertTrue(registry.find("test_service").isPresent());
         assertEquals(service, registry.find("test_service").get());
+    }
+
+    @Test
+    void shouldRejectDuplicateServiceId() {
+        ServiceRegistry registry = new ServiceRegistry();
+    
+        registry.register(new TestService("same_id"));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> registry.register(new TestService("same_id"))
+        );
+
+        assertTrue(exception.getMessage().contains("服务 ID 已存在"));
     }
 
     private static class TestService implements CampusService {
