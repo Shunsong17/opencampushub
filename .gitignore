@@ -7,6 +7,13 @@ out/
 .vscode/
 .idea/
 
+# 本地运行配置与插件目录（不进仓库：路径、启禁用状态因人而异）
+/plugins/
+/plugins.properties
+
+# 本地打出的发行包（正式发行物放仓库外 release/）
+*.zip
+
 # 系统文件
 .DS_Store
 Thumbs.db
