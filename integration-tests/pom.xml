@@ -1,0 +1,27 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent><groupId>com.opencampus</groupId><artifactId>opencampus-hub</artifactId><version>0.1.0-SNAPSHOT</version></parent>
+    <artifactId>integration-tests</artifactId>
+    <dependencies>
+        <dependency><groupId>com.opencampus</groupId><artifactId>campus-core</artifactId><version>${project.version}</version><scope>test</scope></dependency>
+        <dependency><groupId>com.opencampus</groupId><artifactId>course-plugin</artifactId><version>${project.version}</version><scope>test</scope></dependency>
+        <dependency><groupId>com.opencampus</groupId><artifactId>library-plugin</artifactId><version>${project.version}</version><scope>test</scope></dependency>
+        <dependency><groupId>com.opencampus</groupId><artifactId>canteen-plugin</artifactId><version>${project.version}</version><scope>test</scope></dependency>
+        <dependency><groupId>com.opencampus</groupId><artifactId>activity-plugin</artifactId><version>${project.version}</version><scope>test</scope></dependency>
+        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>5.11.4</version><scope>test</scope></dependency>
+    </dependencies>
+    <build><plugins><plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-failsafe-plugin</artifactId><version>3.5.2</version>
+        <configuration>
+            <systemPropertyVariables><project.root>${project.basedir}/..</project.root></systemPropertyVariables>
+            <classpathDependencyExcludes>
+                <classpathDependencyExclude>com.opencampus:course-plugin</classpathDependencyExclude>
+                <classpathDependencyExclude>com.opencampus:library-plugin</classpathDependencyExclude>
+                <classpathDependencyExclude>com.opencampus:canteen-plugin</classpathDependencyExclude>
+                <classpathDependencyExclude>com.opencampus:activity-plugin</classpathDependencyExclude>
+            </classpathDependencyExcludes>
+        </configuration>
+        <executions><execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution></executions>
+    </plugin></plugins></build>
+</project>

@@ -11,13 +11,19 @@ import java.util.Optional;
 public class ServiceDispatcher {
 
     private final ServiceRegistry registry;
+    private final java.util.Set<String> disabledServices;
 
     public ServiceDispatcher(ServiceRegistry registry) {
+        this(registry, java.util.Set.of());
+    }
+
+    public ServiceDispatcher(ServiceRegistry registry, java.util.Set<String> disabledServices) {
         if (registry == null) {
             throw new IllegalArgumentException("服务注册中心不能为空");
         }
 
         this.registry = registry;
+        this.disabledServices = java.util.Set.copyOf(disabledServices);
     }
 
     public QueryResult dispatch(QueryRequest request) {
@@ -31,6 +37,9 @@ public class ServiceDispatcher {
             );
         }
 
+        if (disabledServices.contains(request.serviceId())) {
+            return QueryResult.failure(request.serviceId(), ErrorCode.SERVICE_DISABLED, "服务已禁用");
+        }
         Optional<CampusService> service = registry.find(request.serviceId());
 
         if (service.isEmpty()) {

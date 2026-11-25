@@ -15,6 +15,10 @@
         <module>campus-api</module>
         <module>campus-core</module>
         <module>course-plugin</module>
+        <module>library-plugin</module>
+        <module>canteen-plugin</module>
+        <module>activity-plugin</module>
+        <module>integration-tests</module>
     </modules>
 
     <properties>

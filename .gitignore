@@ -2,6 +2,7 @@
 *.class
 target/
 out/
+plugins/*.jar
 
 # VS Code 和 IntelliJ 本地配置
 .vscode/

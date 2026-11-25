@@ -33,7 +33,7 @@ mvn -pl course-plugin -am clean package
 
 SPI 文件 `META-INF/services/com.opencampus.api.CampusService` 声明 `com.opencampus.plugin.course.CourseService`，实现类具有公开无参构造方法。
 
-配置启禁用、CLI 展示与核心异常隔离由角色 D 负责。当前仓库尚无完整 CLI/配置流程，上述为团队约定的接入步骤，不能视为已完成端到端验证。
+配置启禁用、CLI 展示与核心异常隔离已在多插件扩展中提供通用实现，运行命令及集成验证范围见根 README；需与角色 D 协调审查。
 
 ## 测试与协作
 

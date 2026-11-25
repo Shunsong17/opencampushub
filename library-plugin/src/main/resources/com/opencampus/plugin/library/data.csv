@@ -1,0 +1,4 @@
+id,name,author,category,location,available
+B001,Java程序设计,张老师,计算机,三楼A区,3
+B002,数据库系统概论,李老师,计算机,三楼B区,0
+B003,校园文学选读,王老师,文学,二楼C区,5
