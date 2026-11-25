@@ -6,6 +6,7 @@
 - 实施方案：[OpenCampus-Hub-四人小组实施方案.md](OpenCampus-Hub-四人小组实施方案.md)
 - 课程插件：[course-plugin/README.md](course-plugin/README.md)
 - 契约补充：[docs/api-contract.md](docs/api-contract.md)
+- 公告基础服务与 D 的接入说明：[campus-core/README.md](campus-core/README.md)
 
 ## 当前状态
 
@@ -14,6 +15,9 @@
 | 已完成（main） | 待完成 |
 |---|---|
 | `campus-api` 契约、`ServiceRegistry`、`ServiceDispatcher`、`PluginLoader`、`course-plugin`、CLI/配置/展示层、`integration-tests`（6 项）、Checkstyle、CI 配置、发布脚本 | 公告服务接入（代码在 `5b4aea7`，已审查）、`docs/DESIGN.docx`、LICENSE、GitHub 上的真实 CI 运行记录、最终 Tag |
+
+当前公告功能分支已同步 `main` @ `5d32020`，保留公告服务实现和 `5163f3f` 的评审修复。
+下文保留 main 的状态、贡献和审查记录；公告服务的 `Main` 注册接入仍待完成，分支同步不代表 PR 已合并。
 
 ## 1. 用户、场景与范围
 
@@ -33,7 +37,7 @@
 mvn clean verify
 ```
 
-预期：`BUILD SUCCESS`，5 个模块，88 项测试通过，Checkstyle 0 违规。
+预期：`BUILD SUCCESS`，5 个模块；当前公告功能分支为 126 项测试，main 基线为 88 项，Checkstyle 0 违规。
 
 构建后可直接运行（不需要 IDE）。先准备插件目录与本地配置（两者都不入库）：
 
@@ -113,12 +117,15 @@ JDK 19+ 会按控制台代码页输出。若看到乱码，先执行 `chcp 65001
 | 模块 | 作用 | 依赖 |
 |---|---|---|
 | `campus-api` | 公共契约：服务接口、元信息、请求、结果、错误码 | — |
-| `campus-core` | 注册中心、调度器、SPI 插件加载、配置、CLI、展示 | `campus-api` |
+| `campus-core` | 注册中心、调度器、SPI 插件加载、内置公告查询、配置、CLI、展示 | `campus-api` |
 | `course-plugin` | 课程查询插件，可独立构建 | 仅 `campus-api` |
 | `integration-tests` | 跨模块插件接入测试（真实 JAR + 真实核心 + CLI） | `campus-api`、`campus-core`（test） |
 | `scripts/` | 发行包构建与解压复验脚本 | — |
 
 插件只依赖公开 API，不得引用 `campus-core` 内部类——`CourseJarIT` 用隔离类加载器断言 `com.opencampus.core.plugin.PluginLoader` 不可见，`PluginIntegrationTest` 还会扫描核心源码，确认没有引用插件包或插件类。
+
+公告服务 `announcement_query` 支持关键词和分类交集筛选，空条件列出全部公告。
+它通过统一注册中心与调度器调用，查询规则、数据格式及接入示例见 [campus-core/README.md](campus-core/README.md)。
 
 ### 配置项 `plugins.properties`
 
@@ -150,6 +157,8 @@ JDK 19+ 会按控制台代码页输出。若看到乱码，先执行 `chcp 65001
 | `ServiceRegistryTest` | 13 | 注册、查找、注销、重复 ID、元信息校验、版本兼容 |
 | `ServiceDispatcherTest` | 15 | 未知服务、禁用、元信息不一致、插件异常、结果契约 |
 | `PluginLoaderTest` | 6 | 空目录、真实 JAR 发现、坏插件隔离、损坏 JAR、重复关闭 |
+| `AnnouncementServiceTest` | 35 | 关键词、分类、交集、空条件、无匹配、错误参数、CSV 与数据读取失败及错误行号 |
+| `AnnouncementIntegrationTest` | 3 | 公告注册、调度及统一结果/错误契约 |
 | `CommandLineAppTest` | 9 | 菜单、非法选项、EOF、目录只显示启用服务、参数输入、错误展示 |
 | `PluginConfigTest` | 7 | 启禁用、相对/绝对目录、非法布尔值、别名、BOM/反斜杠防御 |
 | `ResultPrinterTest` | 6 | 条目/字段标签、未知字段、错误码、null 字段容错、目录渲染 |
@@ -158,16 +167,20 @@ JDK 19+ 会按控制台代码页输出。若看到乱码，先执行 `chcp 65001
 | `CourseJarIT` | 1 | 真实 JAR + 隔离类加载器 |
 | `PluginIntegrationTest` | 6 | SPI 发现、启用目录与字段核对、禁用行为、坏 JAR 隔离、异常隔离、核心无课程专用代码 |
 
-合计 88 项（核心 56 + 插件 25 + 插件 JAR 集成 1 + 跨模块集成 6）。
+当前公告功能分支合计 126 项（核心 94 + 插件 25 + 插件 JAR 集成 1 + 跨模块集成 6）。main 基线为 88 项（不含公告的 38 项测试）。
 
-成员 B 的公告测试（`AnnouncementServiceTest` 35 + `AnnouncementIntegrationTest` 3）在 `feat/role-b-announcement-service` @ `5b4aea7`，尚未合入该表。审查时已把该分支合并到 `main` 实测：**126 项全部通过**（核心 94 + 插件 25 + 插件 JAR 1 + 跨模块集成 6），Checkstyle 0 违规。
+成员 B 的公告测试（`AnnouncementServiceTest` 35 + `AnnouncementIntegrationTest` 3）已包含在上表。D 审查时曾将公告分支与 main 临时合并实测：**126 项全部通过**（核心 94 + 插件 25 + 插件 JAR 1 + 跨模块集成 6），Checkstyle 0 违规。
 
-实测（仓库根目录，2026-11-25，Maven 3.9.16 + JDK 25.0.4.1，Windows 11）：
+main 基线实测（仓库根目录，2026-11-25，Maven 3.9.16 + JDK 25.0.4.1，Windows 11）：
 
 | 命令 | 结果 |
 |---|---|
 | `mvn -B clean verify` | 成功，5 个模块，88 项测试，Checkstyle 0 违规 |
 | `mvn -B -pl course-plugin -am test` | 成功，25 项（用于故障恢复后复验） |
+
+当前公告功能分支同步 `main` @ `5d32020` 后，于 2026-11-25 在 Windows 11、Maven 3.9.11、
+JDK 21.0.12.1 下完成完整 `clean verify`：5 个模块成功，126 项测试全部通过，Checkstyle 0 违规。
+公告工程外 JAR 验证命令及原始基线记录见 [campus-core/README.md](campus-core/README.md)。
 
 **故障注入演示**（执行并恢复，证据可复核）：
 
