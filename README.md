@@ -9,11 +9,11 @@
 
 ## 当前状态
 
-`main` @ `756bb8e`（2026-11-25）。**CLI、配置、插件接入、集成测试、Checkstyle、CI 配置、发布脚本已就绪；公告基础服务（成员 B）尚未实现。**
+`main` @ `22e4d04`（2026-11-25）。**CLI、配置、插件接入、集成测试、Checkstyle、CI 配置、发布脚本已就绪；成员 B 的公告服务已在分支 `feat/role-b-announcement-service`（`5b4aea7`）完成并通过审查，尚未合并接入 `Main`。**
 
-| 已完成 | 未开始 |
+| 已完成（main） | 待完成 |
 |---|---|
-| `campus-api` 契约、`ServiceRegistry`、`ServiceDispatcher`、`PluginLoader`、`course-plugin`、CLI/配置/展示层、`integration-tests`（6 项）、Checkstyle、CI 配置、发布脚本 | 公告服务、`docs/DESIGN.docx`、LICENSE、GitHub 上的真实 CI 运行记录、最终 Tag |
+| `campus-api` 契约、`ServiceRegistry`、`ServiceDispatcher`、`PluginLoader`、`course-plugin`、CLI/配置/展示层、`integration-tests`（6 项）、Checkstyle、CI 配置、发布脚本 | 公告服务接入（代码在 `5b4aea7`，已审查）、`docs/DESIGN.docx`、LICENSE、GitHub 上的真实 CI 运行记录、最终 Tag |
 
 ## 1. 用户、场景与范围
 
@@ -21,7 +21,7 @@
 
 **流程**：查看服务目录 → 选择服务并输入条件 → 核心查找并调用服务/插件 → 统一结果或可读错误 → CLI 展示。
 
-**做**：公告查询（核心内置，待实现）、服务注册/发现/调度、一个可独立构建的课程查询插件、配置启禁用、CSV 样例数据与自动化测试、命令行交互。
+**做**：公告查询（核心内置，代码在 B 分支，待合并接入）、服务注册/发现/调度、一个可独立构建的课程查询插件、配置启禁用、CSV 样例数据与自动化测试、命令行交互。
 
 **不做**：登录认证、真实教务系统/数据库/外部 API、Web 与移动端、插件市场、热加载。
 
@@ -160,6 +160,8 @@ JDK 19+ 会按控制台代码页输出。若看到乱码，先执行 `chcp 65001
 
 合计 88 项（核心 56 + 插件 25 + 插件 JAR 集成 1 + 跨模块集成 6）。
 
+成员 B 的公告测试（`AnnouncementServiceTest` 35 + `AnnouncementIntegrationTest` 3）在 `feat/role-b-announcement-service` @ `5b4aea7`，尚未合入该表。审查时已把该分支合并到 `main` 实测：**126 项全部通过**（核心 94 + 插件 25 + 插件 JAR 1 + 跨模块集成 6），Checkstyle 0 违规。
+
 实测（仓库根目录，2026-11-25，Maven 3.9.16 + JDK 25.0.4.1，Windows 11）：
 
 | 命令 | 结果 |
@@ -179,7 +181,7 @@ JDK 19+ 会按控制台代码页输出。若看到乱码，先执行 `chcp 65001
 
 **CI**：`.github/workflows/ci.yml` 已提交，在 Ubuntu + Temurin JDK 17 上执行 `mvn -B clean verify` 并上传测试报告。**目前没有任何真实运行记录，不得声称 CI 已通过**；首次推送后用实际运行链接替换本句。
 
-**发布脚本**：`scripts/build-release.ps1`（Windows PowerShell 5.1+）执行 `mvn clean verify` → 组装 `lib/`、`plugins/`、`plugins.properties`、`run.bat`、`run.sh` → 打 ZIP → 解压到临时目录实际启动 `--list` 与课程查询 → 计算 SHA-256 → 在**仓库外** `release/RELEASE.md` 记录版本、Commit、测试数、哈希与复验输出。当前结论为 `HOLD`：公告服务缺失，验收表中"默认显示公告基础服务""查询图书馆公告"两条还不能演示。
+**发布脚本**：`scripts/build-release.ps1`（Windows PowerShell 5.1+）执行 `mvn clean verify` → 组装 `lib/`、`plugins/`、`plugins.properties`、`run.bat`、`run.sh` → 打 ZIP → 解压到临时目录实际启动 `--list` 与课程查询 → 计算 SHA-256 → 在**仓库外** `release/RELEASE.md` 记录版本、Commit、测试数、哈希与复验输出。当前结论为 `HOLD`：公告服务尚未合并接入，验收表中"默认显示公告基础服务""查询图书馆公告"两条还不能演示。
 
 ## 5. 协作
 
@@ -193,16 +195,18 @@ JDK 19+ 会按控制台代码页输出。若看到乱码，先执行 `chcp 65001
 | 姓名/学号 | 实质改动（Commit/PR） | 审查他人改动 | AI 使用与核验 |
 |---|---|---|---|
 | A：胡城玮 | `campus-api` 8 个契约类型；`ServiceRegistry`、`ServiceDispatcher`、`PluginLoader`；核心 34 项测试；`docs/api-contract.md`。`363870c`…`014713a` 经本地合并 `d7e5414` 进入 `main`（未经 PR）；调度器加固经 PR #3（`afdb217`）合并 | 审查 C 的 `3e94c43`（插件契约与错误映射） | 本文件与审查意见由 AI 辅助整理，结论以实际构建/测试复核 |
-| B：王湛阳 | 公告服务：未开始 | 待填 | 待填 |
+| B：王湛阳 | `feat/role-b-announcement-service` @ `5b4aea7`：公告模型、CSV 加载、查询、5 条样例、35 项单元测试 + 3 项注册/调度集成测试、`campus-core/README.md` | 尚待 B 本人审查他人改动 | AI 辅助实现与测试；D 已复核其测试数字与故障注入（4 项失败）并完成代码审查，结论见下 |
 | C：翁政杰 | 课程插件模块全部代码与测试，`3e94c43`（PR #1） | 待填（需审查 D 的集成测试与接入流程） | 插件 README 注明模块由 AI 辅助实现与测试，需本人核对语义 |
-| D：吴诗祺 | CLI/配置/展示层（`Main`、`CommandLineApp`、`PluginConfig`、`ResultPrinter`）、`integration-tests` 6 项、Checkstyle 与 CI 配置、发布脚本、README；分支 `feat/d-cli-config-release` 的 4 个提交：`feat(cli)`（CLI/配置/展示）、`chore(build)`（Checkstyle/CI/集成测试）、`feat(release)`（发行脚本）、`docs(readme)` | 待做：审查 B 的数据边界与查询测试（下一步） | 代码与文档由 AI 辅助实现；本人在 JDK 25 + Maven 3.9.16 下实际跑通 88 项测试、多组 CLI 场景（目录、按名称/星期/时间查询、无条件、未知服务、禁用、坏 JAR、交互式会话）、故障注入与发行包解压复验，结论以这些实测输出为准 |
+| D：吴诗祺 | CLI/配置/展示层（`Main`、`CommandLineApp`、`PluginConfig`、`ResultPrinter`）、`integration-tests` 6 项、Checkstyle 与 CI 配置、发布脚本、README；分支 `feat/d-cli-config-release` 的 4 个提交：`feat(cli)`（CLI/配置/展示）、`chore(build)`（Checkstyle/CI/集成测试）、`feat(release)`（发行脚本）、`docs(readme)` | 审查 B 的 `5b4aea7`（公告服务，9 条，有条件通过，见下） | 代码与文档由 AI 辅助实现；本人在 JDK 25 + Maven 3.9.16 下实际跑通 88 项测试、多组 CLI 场景（目录、按名称/星期/时间查询、无条件、未知服务、禁用、坏 JAR、交互式会话）、故障注入与发行包解压复验，结论以这些实测输出为准 |
 
 **审查记录**
 
 | 被审查对象 | 审查人 | 意见 | 处理/回应 | 更新提交 | 结论 |
 |---|---|---|---|---|---|
-| 翁政杰 | 胡城玮 | 9 条，见下 | 待翁政杰回应 | — | 待定 |
-| 成员 B 的公告数据边界与查询测试 | 吴诗祺 | 待开展 | — | — | 未开始 |
+| 翁政杰 `3e94c43` | 胡城玮 | 9 条，见下 | 待翁政杰回应 | — | 待定 |
+| 王湛阳 `5b4aea7`（`feat/role-b-announcement-service`，公告服务） | 吴诗祺（D） | 9 条，见下 | 待王湛阳回应；接入 `Main` 由 D 在合并后完成 | — | 有条件通过 |
+
+**A 审查 C（`3e94c43`）**
 
 1. 插件 README 验证数字过期（36 → 38），已由胡城玮更新，翁政杰确认即可。
 2. 拒绝未知参数在契约中无依据 —— 已在 `docs/api-contract.md` 明确"插件可拒绝或忽略，须在自身 README 声明"，翁政杰确认即可。
@@ -214,8 +218,22 @@ JDK 19+ 会按控制台代码页输出。若看到乱码，先执行 `chcp 65001
 8. 缺参数值为 null 的测试用例。
 9. 参数校验优先于数据错误 —— 已在 `docs/api-contract.md` 写明该优先级，翁政杰确认即可。
 
+**D 审查 B（`5b4aea7`）**
+
+复核方式：把 `origin/feat/role-b-announcement-service` 检出到临时 worktree 只读审查；故障注入在临时副本中执行；仓库与 B 的分支未改动。实测：B 分支 98 项通过；合并 `main` 后 126 项通过、Checkstyle 0 违规；合并仅 `README.md` 冲突。
+
+1. **P0**：`AnnouncementService` 未在 `Main.registerBuiltinServices` 注册，合并后 `--list` 输出"当前没有已启用的服务"，公告服务对用户不可见。这不是 B 的代码缺陷，需 D 在合并后补注册并加一条 CLI 级测试。
+2. **P0**：B 基于 `756bb8e` 修改 `README.md`，与 `main` 唯一冲突即此文件；其版本会把 D 的工作写成"未开始"、把测试数写回 98。请 rebase 后只保留公告增量，状态/数字/贡献表由 D 维护。
+3. **P1**：空条件列出全部公告依赖独立分支 `docs/announcement-contract` @ `4a830c2` 的裁定，该分支不是 B 分支的祖先。合并顺序须先合契约分支，或在 PR 中引用该条款，否则实现看起来与 §5.4 旧表述冲突。
+4. **P1**：`campus-core/README.md` 的"98 项"是 `5b4aea7` 基线数字，合并后为 126 项，建议改成"基线 + 合并后"两段，避免过期。
+5. **P2**：`getResourceAsStream("/announcements.csv")` 位于 JAR 根，与 C 的 `/courses.csv` 同类风险，建议改包内路径（与 A 的第 5 条一并处理）。
+6. **P2**：`invalid()` 在 `request == null` 时回填 `null` serviceId，生产路径由调度器拦截、不会触发；建议在公告 README 注明。
+7. **P2**：35 项测试中多条断言依赖样例数据具体内容（A001–A005），改样例会碎；格式类测试已用 `fromCsv` 注入，设计合理，建议 README 注明即可。
+8. **P2**：可选补两条测试——`category` 大小写敏感性；未知参数与数据加载失败同时发生的优先级（已有单侧覆盖）。
+9. **P2**：命名风格与 A 的 `shouldXxx` 不一致（团队未统一，不阻塞）；`AnnouncementIntegrationTest` 由 surefire 在 `campus-core` 执行，注意别与 failsafe 的 `*IntegrationTest` 规则混淆。
+
 ## 7. 许可与限制
 
 - **LICENSE 未添加**，交付前必须选定。建议 MIT（简洁）或 Apache-2.0（含专利授权），组内确认后写入。
 - 依赖：JUnit 5.11.4（EPL-2.0，测试作用域）、Maven 官方插件与 Checkstyle 10.21.4（Apache-2.0 / LGPL-2.1，构建期），均不随发行物分发。
-- 限制：公告基础服务与设计文档未完成；`ResultItem.fields` 只有英文字段名，CLI 用映射表显示中文标签，未知插件字段原样输出；仅 Windows + JDK 25 验证，JDK 17 与 Linux 未在本机复测（CI 首次运行后补充）；纯本地 CSV，无数据库、无并发与权限控制；发布脚本依赖 Windows PowerShell，CI 不构建发行包。
+- 限制：公告服务已审查但未合并接入；设计文档未完成；`ResultItem.fields` 只有英文字段名，CLI 用映射表显示中文标签，未知插件字段原样输出；仅 Windows + JDK 25 验证，JDK 17 与 Linux 未在本机复测（CI 首次运行后补充）；纯本地 CSV，无数据库、无并发与权限控制；发布脚本依赖 Windows PowerShell，CI 不构建发行包。
