@@ -71,8 +71,52 @@ mvn -B clean verify
 - `AnnouncementServiceTest`：35 项，覆盖元信息、标题/正文关键词、分类、交集、空条件、无匹配、错误请求、CSV 引号/日期/坏行、读取失败与校验优先级。
 - `AnnouncementIntegrationTest`：3 项，经过真实注册中心和调度器验证成功、无匹配和数据加载失败结果。
 - 核心模块与依赖测试共 72 项通过；全项目 `clean verify` 共 98 项通过。
-- 在工程外临时目录，仅通过 API JAR 和核心 JAR 调用公告服务，成功查到 A002，空条件返回 5 条，验证样例资源随 JAR 可读。
+- 在工程外临时目录，仅通过 API JAR 和核心 JAR 调用公告服务，成功查到 A002，空条件返回 5 条；复现命令见下。
 - 尚未在 JDK 17 运行环境复测；本地测试成功不代表 CI 成功。
+
+工程外 JAR 验证：先在仓库根目录完成上面的 `mvn -B clean verify`，再从仓库根目录执行以下 PowerShell 命令。
+它将临时 Java 源文件写到系统临时目录并切换到该目录运行，classpath 仅包含 API 和核心两个 JAR，
+不包含源码或 `target/classes`。Java 源文件启动模式要求 JDK 17+，断言失败会以非零退出码报错。
+
+```powershell
+$repoPath = (Get-Location).Path
+$apiJar = (Resolve-Path (Join-Path $repoPath 'campus-api/target/campus-api-0.1.0-SNAPSHOT.jar')).Path
+$coreJar = (Resolve-Path (Join-Path $repoPath 'campus-core/target/campus-core-0.1.0-SNAPSHOT.jar')).Path
+$smokeDir = Join-Path ([System.IO.Path]::GetTempPath()) ('opencampus-announcement-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $smokeDir -ErrorAction Stop | Out-Null
+@'
+import com.opencampus.api.QueryRequest;
+import com.opencampus.core.announcement.AnnouncementService;
+import java.util.Map;
+
+class AnnouncementSmoke {
+    public static void main(String[] args) {
+        var service = new AnnouncementService();
+        var match = service.query(new QueryRequest(AnnouncementService.SERVICE_ID,
+                Map.of("keyword", "\u56fe\u4e66\u9986")));
+        if (!match.success() || match.items().size() != 1
+                || !"A002".equals(match.items().get(0).fields().get("id"))) {
+            throw new AssertionError("Expected A002: " + match);
+        }
+        var all = service.query(new QueryRequest(AnnouncementService.SERVICE_ID, Map.of()));
+        if (!all.success() || all.items().size() != 5) {
+            throw new AssertionError("Expected 5 announcements: " + all);
+        }
+        System.out.println("A002 verified; all announcements: " + all.items().size());
+    }
+}
+'@ | Set-Content -LiteralPath (Join-Path $smokeDir 'AnnouncementSmoke.java') -Encoding ASCII
+Push-Location -LiteralPath $smokeDir
+try {
+    java --class-path "$apiJar;$coreJar" .\AnnouncementSmoke.java
+    if ($LASTEXITCODE -ne 0) { throw 'Announcement JAR verification failed' }
+} finally {
+    Pop-Location
+}
+```
+
+预期输出：`A002 verified; all announcements: 5`。源码中的 `\u56fe\u4e66\u9986` 为“图书馆”，
+使用 Unicode 转义以避免 PowerShell 版本或控制台编码影响验证。两个断言同时验证了打包后的样例资源可读取。
 
 故障注入已在临时工程副本执行：将 `AnnouncementService` 中
 `announcement.category().equals(category)` 临时改为

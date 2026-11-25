@@ -159,7 +159,7 @@ class AnnouncementServiceTest {
             "A001,标题,活动,2026-02-30,内容",
             "A001,标题,活动,2026-1-20,内容",
             "A001,标题,活动,昨天,内容",
-            "A001,标题,活动,2026-11-20,内容\nA001,另一标题,活动,2026-11-21,内容",
+            "VALID,另一标题,活动,2026-11-21,内容",
             "A001,\"未闭合标题,活动,2026-11-20,内容",
             "A001,标\"题,活动,2026-11-20,内容",
             "A001,\"标题\"尾部,活动,2026-11-20,内容"
@@ -169,6 +169,7 @@ class AnnouncementServiceTest {
         QueryResult result = fromCsv(HEADER + valid + row).query(request(Map.of()));
         assertFailure(result, ErrorCode.DATA_LOAD_FAILED);
         assertTrue(result.message().contains("行错误"));
+        assertTrue(result.message().contains("第 3 行"), result.message());
     }
 
     @ParameterizedTest
