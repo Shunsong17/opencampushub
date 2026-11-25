@@ -41,11 +41,21 @@ SPI 文件 `META-INF/services/com.opencampus.api.CampusService` 声明 `com.open
 
 故障演示方法：临时将 CourseService 的星期过滤改成始终 false，运行 `mvn -pl course-plugin -am test`，星期查询与交集断言应失败；恢复后重新验证。此段是操作说明，实际执行结果另行记录。
 
-本模块由 AI 辅助实现和测试；成员 C 应核对查询语义和实际验证结果。待 A 审查插件契约；C 对 D 的真实审查需另行记录，不能以此说明代替审查记录。
+本模块由 AI 辅助实现和测试；成员 C 应核对查询语义和实际验证结果。A 已于 2026-11-24 完成插件契约与错误映射审查（审查意见待整理进根 README 贡献表），本文件按复核结果更新了下方验证数字，其余意见待 C 处理后登记结论；C 对 D 的真实审查需另行记录，不能以此说明代替审查记录。
 
-## 本地验证记录（2026-11-17）
+## 本地验证记录
+
+### 2026-11-24 复核（`main` @ `d7e5414`，A）
+
+- 环境：Apache Maven 3.9.11，JDK 21.0.12.1（Oracle，`release 17` 编译目标）；仍未在 JDK 17 运行环境复测。
+- 根目录执行 `mvn -pl course-plugin -am clean verify`：成功，25 项单元/SPI 测试（`CourseServiceTest` 24 + `CourseSpiTest` 1）和 1 项真实 JAR 集成测试（`CourseJarIT`）通过，产出 `course-plugin/target/course-plugin-0.1.0-SNAPSHOT.jar`。
+- 根目录执行 `mvn -pl course-plugin -am clean package`：成功，25 项单元/SPI 测试通过，不执行 `CourseJarIT`（failsafe 只绑定到 `integration-test`/`verify` 阶段）。
+- 根目录执行 `mvn -B clean verify`：成功，根 pom、`campus-api`、`campus-core`、`course-plugin` 四个 reactor 模块全绿，全项目 38 项测试通过（核心 12 + 插件单元 25 + JAR 集成 1）。
+- 仍未验证：CI、Checkstyle、完整 CLI 启禁用、故障注入演示；仓库尚无 Checkstyle 配置与 CLI。
+
+### 2026-11-17 首次验证（C）
 
 - Maven 3.9.14，Maven 使用 JDK 21.0.8，编译目标 release 17；尚未在 JDK 17 运行环境复测。
 - 根目录执行 `mvn -pl course-plugin -am clean verify`：成功，25 项单元/SPI 测试和 1 项真实 JAR 集成测试通过，同时生成插件 JAR。
-- 根目录执行 `mvn -B clean verify`：成功，包含现有核心的 10 项测试，全项目共 36 项测试通过。
+- 根目录执行 `mvn -B clean verify`：成功，包含当时核心的 10 项测试，全项目共 36 项测试通过（合并 `014713a` 新增的 2 项插件加载测试后为 38 项）。
 - 目前未验证 CI、Checkstyle、完整 CLI 启禁用和故障注入演示；仓库尚无 Checkstyle 配置。

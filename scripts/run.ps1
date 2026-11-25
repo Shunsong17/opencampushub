@@ -10,11 +10,13 @@ if (-not (Test-Path -LiteralPath $apiJar) -or -not (Test-Path -LiteralPath $core
     throw 'Missing core/API JARs. Run mvn clean verify first.'
 }
 if (-not $AppArguments) { $AppArguments = @('list') }
+if ($AppArguments[0] -eq 'list') { $AppArguments[0] = '--list' }
+if ($AppArguments[0] -eq 'query') { $AppArguments[0] = '--query' }
 $classPath = $apiJar + [IO.Path]::PathSeparator + $coreJar
 $previousEncoding = [Console]::OutputEncoding
 try {
     [Console]::OutputEncoding = [Text.UTF8Encoding]::new()
-    & java '-Dstdout.encoding=UTF-8' '-Dstderr.encoding=UTF-8' -cp $classPath com.opencampus.core.Main (Join-Path $projectRoot 'plugins.properties') @AppArguments
+    & java '-Dstdout.encoding=UTF-8' '-Dstderr.encoding=UTF-8' -cp $classPath com.opencampus.core.Main --config (Join-Path $projectRoot 'plugins.properties') @AppArguments
 } finally {
     [Console]::OutputEncoding = $previousEncoding
 }

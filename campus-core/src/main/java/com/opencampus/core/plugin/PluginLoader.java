@@ -18,6 +18,15 @@ import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
 public class PluginLoader implements AutoCloseable {
+
+    public record Report(List<CampusService> services, List<String> failures) {
+
+        public Report {
+            services = List.copyOf(services);
+            failures = List.copyOf(failures);
+        }
+    }
+
     public record Diagnostic(Path jar, String serviceId, ErrorCode code, String message) {
     }
 
@@ -29,13 +38,26 @@ public class PluginLoader implements AutoCloseable {
         return List.copyOf(diagnostics);
     }
 
+    public Report loadWithDiagnostics(Path directory) {
+        List<CampusService> services = loadFromDirectory(directory);
+        return new Report(services, diagnostics.stream()
+                .map(diagnostic -> diagnostic.code() + " " + diagnostic.jar().getFileName()
+                        + " " + diagnostic.serviceId() + ": " + diagnostic.message()).toList());
+    }
+
     public List<CampusService> loadFromDirectory(Path pluginDirectory) {
-        if (closed) throw new IllegalStateException("加载器已关闭");
-        if (pluginDirectory == null) throw new IllegalArgumentException("插件目录不能为空");
+        if (closed) {
+            throw new IllegalStateException("加载器已关闭");
+        }
+        if (pluginDirectory == null) {
+            throw new IllegalArgumentException("插件目录不能为空");
+        }
         diagnostics.clear();
         List<CampusService> services = new ArrayList<>();
         Set<String> ids = new HashSet<>();
-        if (!Files.isDirectory(pluginDirectory)) return List.of();
+        if (!Files.isDirectory(pluginDirectory)) {
+            return List.of();
+        }
         try (Stream<Path> paths = Files.list(pluginDirectory)) {
             for (Path jar : paths.filter(Files::isRegularFile)
                     .filter(path -> path.toString().endsWith(".jar")).sorted().toList()) {
@@ -60,7 +82,6 @@ public class PluginLoader implements AutoCloseable {
                 String serviceId = null;
                 try {
                     var provider = providers.next();
-                    if (provider.type().getClassLoader() != loader) continue;
                     CampusService service = provider.get();
                     ServiceMetadata metadata = service.getMetadata();
                     serviceId = metadata == null ? null : metadata.serviceId();
@@ -73,7 +94,9 @@ public class PluginLoader implements AutoCloseable {
                     if (metadata.apiVersion() == null || !metadata.apiVersion().matches("1\\.[0-9]+")) {
                         throw new IllegalArgumentException("不兼容的 API 版本：" + metadata.apiVersion());
                     }
-                    if (!ids.add(serviceId)) throw new IllegalArgumentException("服务 ID 重复：" + serviceId);
+                    if (!ids.add(serviceId)) {
+                        throw new IllegalArgumentException("服务 ID 重复：" + serviceId);
+                    }
                     services.add(service);
                 } catch (RuntimeException | ServiceConfigurationError | LinkageError exception) {
                     report(jar, serviceId, exception.toString());
@@ -89,18 +112,15 @@ public class PluginLoader implements AutoCloseable {
     }
 
     @Override
-    public void close() throws IOException {
-        IOException failure = null;
+    public void close() {
         for (URLClassLoader loader : classLoaders) {
             try {
                 loader.close();
             } catch (IOException exception) {
-                if (failure == null) failure = exception;
-                else failure.addSuppressed(exception);
+                report(null, null, "无法关闭插件类加载器：" + exception.getMessage());
             }
         }
         classLoaders.clear();
         closed = true;
-        if (failure != null) throw failure;
     }
 }

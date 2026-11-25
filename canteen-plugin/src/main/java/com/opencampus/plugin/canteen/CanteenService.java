@@ -1,6 +1,13 @@
 package com.opencampus.plugin.canteen;
 
-import com.opencampus.api.*;
+import com.opencampus.api.CampusService;
+import com.opencampus.api.ErrorCode;
+import com.opencampus.api.QueryParameter;
+import com.opencampus.api.QueryRequest;
+import com.opencampus.api.QueryResult;
+import com.opencampus.api.ResultItem;
+import com.opencampus.api.ServiceMetadata;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -49,7 +56,9 @@ public final class CanteenService implements CampusService {
         Map<String, String> conditions = new LinkedHashMap<>();
         try {
             for (Map.Entry<String, String> entry : request.parameters().entrySet()) {
-                if (entry.getKey() == null || !PARAMETERS.contains(entry.getKey())) return invalid("未知参数");
+                if (entry.getKey() == null || !PARAMETERS.contains(entry.getKey())) {
+                    return invalid("未知参数");
+                }
                 String value = entry.getValue() == null ? "" : entry.getValue().strip();
                 if (!value.isEmpty()) {
                     CanteenCsvLoader.validateParameter(entry.getKey(), value);
@@ -59,12 +68,18 @@ public final class CanteenService implements CampusService {
         } catch (IllegalArgumentException | java.time.DateTimeException exception) {
             return invalid(exception.getMessage());
         }
-        if (conditions.isEmpty()) return invalid("至少提供一个有效查询条件");
-        if (loadError != null) return QueryResult.failure(SERVICE_ID, ErrorCode.DATA_LOAD_FAILED, loadError);
+        if (conditions.isEmpty()) {
+            return invalid("至少提供一个有效查询条件");
+        }
+        if (loadError != null) {
+            return QueryResult.failure(SERVICE_ID, ErrorCode.DATA_LOAD_FAILED, loadError);
+        }
         List<ResultItem> items = records.stream()
-                .filter(record -> conditions.entrySet().stream().allMatch(entry -> matches(record, entry.getKey(), entry.getValue())))
+                .filter(record -> conditions.entrySet().stream().allMatch(entry -> matches(record,
+                        entry.getKey(), entry.getValue())))
                 .map(CanteenService::toItem).toList();
-        return QueryResult.success(SERVICE_ID, items.isEmpty() ? "未找到匹配记录" : "查询完成，共找到 " + items.size() + " 条记录", items);
+        return QueryResult.success(SERVICE_ID, items.isEmpty() ? "未找到匹配记录" : "查询完成，共找到 " + items.size()
+                + " 条记录", items);
     }
 
     private static boolean matches(MenuItem record, String key, String value) {

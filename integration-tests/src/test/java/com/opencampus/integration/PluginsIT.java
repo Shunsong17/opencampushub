@@ -74,17 +74,17 @@ class PluginsIT {
     }
 
     @Test
-    void disabledServiceHiddenAndRejectedEvenWithoutJar() throws Exception {
+    void disabledServiceHiddenAndMissingJarReported() throws Exception {
         Path directory = install();
         Path configFile = temporary.resolve("plugins.properties");
-        Files.writeString(configFile, "plugins.directory=plugins\nlibrary_query.enabled=false\n");
+        Files.writeString(configFile, "plugins.directory=plugins\nlibrary_query.enabled=false\ncourse_query.enabled=true\n");
         PluginConfig config = PluginConfig.load(configFile);
-        assertEquals(directory, config.directory());
+        assertEquals(directory, config.pluginsDirectory());
         try (PluginLoader loader = new PluginLoader()) {
-            ServiceRegistry registry = register(loader.loadFromDirectory(config.directory()), config.disabledServices());
-            assertEquals(3, registry.listMetadata().size());
-            assertTrue(registry.find("library_query").isEmpty());
-            ServiceDispatcher dispatcher = new ServiceDispatcher(registry, config.disabledServices());
+            ServiceRegistry registry = register(loader.loadFromDirectory(config.pluginsDirectory()), Set.of());
+            assertTrue(com.opencampus.core.cli.CommandLineApp.enabledServices(registry, config).stream()
+                    .noneMatch(metadata -> metadata.serviceId().equals("library_query")));
+            ServiceDispatcher dispatcher = new ServiceDispatcher(registry, config::isEnabled);
             assertEquals(ErrorCode.SERVICE_DISABLED,
                     dispatcher.dispatch(new QueryRequest("library_query", Map.of("name", "Java"))).error().code());
             assertTrue(dispatcher.dispatch(new QueryRequest("course_query", Map.of("day", "周三"))).success());
@@ -92,8 +92,8 @@ class PluginsIT {
         Files.delete(directory.resolve("library.jar"));
         try (PluginLoader loader = new PluginLoader()) {
             ServiceDispatcher dispatcher = new ServiceDispatcher(
-                    register(loader.loadFromDirectory(directory), config.disabledServices()), config.disabledServices());
-            assertEquals(ErrorCode.SERVICE_DISABLED,
+                    register(loader.loadFromDirectory(directory), Set.of()), config::isEnabled);
+            assertEquals(ErrorCode.SERVICE_NOT_FOUND,
                     dispatcher.dispatch(new QueryRequest("library_query", Map.of("name", "Java"))).error().code());
         }
     }
@@ -156,29 +156,33 @@ class PluginsIT {
     }
 
     @Test
-    void invalidConfigRejected() throws Exception {
+    void invalidConfigWarnsAndDisables() throws Exception {
         Path config = temporary.resolve("invalid.properties");
         Files.writeString(config, "library_query.enabled=maybe\n");
-        assertThrows(java.io.IOException.class, () -> PluginConfig.load(config));
+        PluginConfig loaded = PluginConfig.load(config);
+        assertFalse(loaded.isEnabled("library_query"));
+        assertEquals(1, loaded.warnings().size());
     }
 
     @Test
     void commandLineListsQueriesAndDisables() throws Exception {
         install();
         Path config = temporary.resolve("cli.properties");
-        Files.writeString(config, "plugins.directory=plugins\nlibrary_query.enabled=false\n");
+        Files.writeString(config, "plugins.directory=plugins\nlibrary_query.enabled=false\n"
+                + "activity_query.enabled=true\ncanteen_query.enabled=true\n");
         PrintStream previous = System.out;
         ByteArrayOutputStream captured = new ByteArrayOutputStream();
         try (PrintStream output = new PrintStream(captured, true, StandardCharsets.UTF_8)) {
             System.setOut(output);
-            Main.main(new String[]{config.toString(), "list"});
+            Main.main(new String[]{"--config", config.toString(), "--list"});
             assertTrue(captured.toString(StandardCharsets.UTF_8).contains("activity_query"));
             assertFalse(captured.toString(StandardCharsets.UTF_8).contains("library_query"));
             captured.reset();
-            Main.main(new String[]{config.toString(), "query", "canteen_query", "date=2026-11-25", "meal=午餐"});
+            Main.main(new String[]{"--config", config.toString(), "--query", "canteen_query",
+                    "date=2026-11-25", "meal=午餐"});
             assertTrue(captured.toString(StandardCharsets.UTF_8).contains("番茄炒蛋"));
             captured.reset();
-            Main.main(new String[]{config.toString(), "query", "library_query", "name=Java"});
+            Main.main(new String[]{"--config", config.toString(), "--query", "library_query", "name=Java"});
             assertTrue(captured.toString(StandardCharsets.UTF_8).contains("SERVICE_DISABLED"));
         } finally {
             System.setOut(previous);
