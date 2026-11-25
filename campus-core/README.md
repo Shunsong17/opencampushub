@@ -2,7 +2,8 @@
 
 公告服务位于 `com.opencampus.core.announcement`，是 `campus-core` 的内置基础能力，
 实现 `campus-api` 的 `CampusService`。服务 ID 为 `announcement_query`，API 版本为 `1.0`。
-当前已完成数据加载、查询和注册/调度集成测试，CLI 与配置入口仍由成员 D 接入。
+当前已完成数据加载、查询和注册/调度集成测试，CLI 与配置框架已从 main 同步；
+公告服务在 `Main` 中的注册入口仍由成员 D 接入。
 
 ## 查询规则
 
@@ -66,13 +67,17 @@ mvn -pl campus-core -am test
 mvn -B clean verify
 ```
 
-2026-11-24 实测，Maven 3.9.11、JDK 21.0.12.1，编译目标 `release 17`：
+原始公告分支基线 `5b4aea7` 于 2026-11-24 实测，Maven 3.9.11、JDK 21.0.12.1，编译目标 `release 17`：
 
 - `AnnouncementServiceTest`：35 项，覆盖元信息、标题/正文关键词、分类、交集、空条件、无匹配、错误请求、CSV 引号/日期/坏行、读取失败与校验优先级。
 - `AnnouncementIntegrationTest`：3 项，经过真实注册中心和调度器验证成功、无匹配和数据加载失败结果。
 - 核心模块与依赖测试共 72 项通过；全项目 `clean verify` 共 98 项通过。
 - 在工程外临时目录，仅通过 API JAR 和核心 JAR 调用公告服务，成功查到 A002，空条件返回 5 条；复现命令见下。
 - 尚未在 JDK 17 运行环境复测；本地测试成功不代表 CI 成功。
+
+2026-11-25 同步 `main` @ `5d32020` 后，在 Maven 3.9.11、JDK 21.0.12.1、Windows 11 下重新执行完整
+`clean verify`：5 个模块构建成功，核心 94 项、课程插件 25 项、插件 JAR 集成 1 项、跨模块集成 6 项，
+合计 126 项全部通过，Checkstyle 0 违规。上述 98 项为原始基线数字，当前分支以本段复验结果为准。
 
 工程外 JAR 验证：先在仓库根目录完成上面的 `mvn -B clean verify`，再从仓库根目录执行以下 PowerShell 命令。
 它将临时 Java 源文件写到系统临时目录并切换到该目录运行，classpath 仅包含 API 和核心两个 JAR，
